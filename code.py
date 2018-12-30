@@ -90,14 +90,19 @@ for i1, synset1 in enumerate(noun_list):
         if i2>=i1 :
             #x_G.add_edge(i1, i2, weight=synset1.path_similarity(synset2))
 '''
+
+#%%
+t0 = time()
+t1 = time()
 cur_noun_list = list()
-for i1, synset1 in enumerate(noun_list):
+for i1, synset1 in tqdm(enumerate(noun_list)):
     if i1%round(5*N_noun/100) == 0 :
         percent = 100.*i1/N_noun
-        print(percent,"%","Time :",time()-t1)
+#        print(percent,"%","Time :",time()-t1)
         t1 = time()
     for i2, synset2 in enumerate(cur_noun_list):
         nx_G.add_edge(i1, i2, weight=synset1.res_similarity(synset2, ic))
+        ()
     cur_noun_list.append(synset1)
 
 # synset1.path_similarity(synset2)    # Hirst and St-Onge Similarity
@@ -109,8 +114,33 @@ for i1, synset1 in enumerate(noun_list):
 
 print(time()-t0)
 
-nx.write_weighted_edgelist(nx_G,'graph/wordnet.graph')
+#nx.write_weighted_edgelist(nx_G,'graph/wordnet.graph')
 
+
+#%%
+cur_noun_list = list()
+from scipy.sparse import csr_matrix
+from scipy.sparse import dok_matrix # indexing seems more efficient
+
+n_nodes = len(noun_list)
+A = csr_matrix((n_nodes,n_nodes))
+epsilon = 3
+
+for i1, synset1 in tqdm(enumerate(noun_list)):
+    if i1%round(5*N_noun/100) == 0 :
+        percent = 100.*i1/N_noun
+#        print(percent,"%","Time :",time()-t1)
+        t1 = time()
+    for i2, synset2 in enumerate(cur_noun_list):
+        weight=synset1.res_similarity(synset2, ic)
+#        print(weight)
+        if weight > epsilon  :
+            A[i1,i2], A[i2,i1] = weight, weight
+    cur_noun_list.append(synset1)
+            
+
+G = nx.from_scipy_sparse_matrix(A)
+#%%
 '''
 ###################################################################################################
 Step 2 and 3 bis: Direct implementation
