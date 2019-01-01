@@ -78,8 +78,8 @@ wn_all = list(wn.all_synsets('n'))
 N_all = len(wn_all)
 
 # Sample of all WordNet noun synsets
-N_sel = 5000
-wn_sel = choice(wn_all,N_sel,False)
+N_sel = 10000
+wn_sel = wn_all[:N_sel] #choice(wn_all,N_sel,False)
 
 node_file = open("graph/wordnet.nodes", "w")
 for i, node in enumerate(wn_sel) :
@@ -87,7 +87,36 @@ for i, node in enumerate(wn_sel) :
 node_file.close()
 
 # Definition of similarity graph
-sim_measures = ["path","lch","wup","res","jcn","lin"]
+sim_measures = list(reversed(["path","lch","wup","res","jcn","lin"]))
+k = 100
+
+def add_value_in_dict(D,i,sim,k) :
+    values = D.values()
+    keys = D.keys()
+    if len(keys) < k :
+        D[i] = sim #{'weight' : sim}
+    else :
+        idx = i
+        mini = sim
+        to_delete = [i]
+        for key, value in zip(keys,values) :
+            if value < mini : #['weight']
+                mini = value #['weight']
+                idx = key
+                to_delete = [key]
+            elif value == mini : #['weight']
+                to_delete.append(key)
+
+        if mini == sim :
+            if len(to_delete)>1 :
+                D[i] = sim #{'weight' : sim}
+        else :
+            D[i] = sim #{'weight' : sim}
+            if len(keys)-len(to_delete) >= k :
+                for key in to_delete :
+                    del D[key]
+
+    return
 
 for method in sim_measures :
 
@@ -100,17 +129,19 @@ for method in sim_measures :
     t_cumul = time()-t_begin
 
     nx_G = nx.Graph()
-    #A = dok_matrix((N_sel,N_sel))
+    dict_G = dict()
 
     print("Add Nodes ...")
 
-    for i, synset in enumerate(wn_sel):
-        nx_G.add_node(i, synset=synset)
+    #for i, synset in enumerate(wn_sel) :
+        #nx_G.add_node(i, synset=synset)
 
     print("Add Edges ...")
     wn_visited = list()
 
-    for i1, synset1 in enumerate(wn_sel):
+    for i1, synset1 in (enumerate(wn_sel)) :
+
+        dict_G[i1] = dict()
 
         if i1%round(5*N_sel/100) == 0 and i1!=0 :
             percent = 100.*i1/N_sel
@@ -142,9 +173,16 @@ for method in sim_measures :
                 sim = synset1.jcn_similarity(synset2, ic)
             elif method == "lin" :
                 sim = synset1.lin_similarity(synset2, ic)
-            nx_G.add_edge(i1, i2, weight=sim)
+
+            if sim > 0 :
+                # nx_G.add_edge(i1, i2, weight=sim)
+                add_value_in_dict(dict_G[i1],i2,sim,k)
+                add_value_in_dict(dict_G[i2],i1,sim,k)
 
         wn_visited.append(synset1)
+
+    #for i, sub_dict in zip(dict_G.keys(), dict_G.values()) :
+    #    print("Elt "+str(i)+" : "+str(len(sub_dict.keys())))
 
     # Print total time
     print("Total Time :", time()-t_begin)
@@ -152,7 +190,7 @@ for method in sim_measures :
     # Save similarity graph
     print("Save Similarity Graph ...")
     t_begin = time()
-    #nx_G = nx.from_scipy_sparse_matrix(A)
+    nx_G = nx.Graph(dict_G)
     nx.write_weighted_edgelist(nx_G,'graph/wordnet_' + method + '.graph')
     print("Total Time :", time()-t_begin)
 
