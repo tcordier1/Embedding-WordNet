@@ -200,7 +200,7 @@ for method in sim_measures :
         nn_weight.sort()
         knn_weight = nn_weight[-k:]
 
-        i1_list = [n for n in range(k)]
+        i1_list = [i1 for n in range(k)]
         edge_list = zip(i1_list,list(knn_ind))
         nx_G.add_edges_from(edge_list, weight=knn_weight)
     
