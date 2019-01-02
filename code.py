@@ -118,7 +118,7 @@ for method in sim_measures :
     wn_visited = list()
 
 
-#%% # full list, the fastest
+#%% # full list, the fastest 1
  
 method = 'lch'
 
@@ -222,3 +222,105 @@ for method in sim_measures :
 Step 2 and 3 bis: Direct implementation
 ###################################################################################################
 '''
+
+
+#%% # full list, the fastest 2
+  
+method = 'res'
+
+
+#sim_measures = ["path","lch","wup","res","jcn","lin"]
+sim_measures = ["res","jcn","lin","path","lch","wup"]
+
+for method in sim_measures :
+        
+    k = 100
+    n_nodes = len(wn_all)
+    
+    
+    print("##############################")
+    print("Use method "+ method + ":")
+    
+    # Definition of times
+    t_begin = time()
+    t_current = time()
+    t_cumul = time()-t_begin
+    
+    nx_G = nx.Graph()
+    
+    print("Add Nodes ...")
+    
+    for i, synset in enumerate(wn_all):
+        nx_G.add_node(i, synset=synset)
+    
+    print("Add Edges ...")
+    wn_visited = list()
+    
+    for i1, synset1 in tqdm(enumerate(wn_all)):
+    
+        
+        
+        if method == "path" :
+            sim_func = synset1.path_similarity
+            need_ic = False
+        elif method == "lch" :
+            sim_func = synset1.lch_similarity
+            need_ic = False
+        elif method == "wup" :
+            sim_func = synset1.wup_similarity
+            need_ic = False
+        elif method == "res" :
+            sim_func = synset1.res_similarity
+            need_ic = True
+        elif method == "jcn" :
+            sim_func = synset1.jcn_similarity
+            need_ic = True
+        elif method == "lin" :
+            sim_func = synset1.lin_similarity
+            need_ic = True
+            
+        nn_ind = np.zeros(n_nodes)
+        nn_weight = np.zeros(n_nodes)
+        nb_nn = 0
+        
+        for i2, synset2 in enumerate(wn_all):
+    
+            # n = 5000
+            # synset1.path_similarity(synset2)    # Hirst and St-Onge Similarity >1h
+            # synset1.lch_similarity(synset2)     # Leacock-Chodorow Similarity >1h10min
+            # synset1.wup_similarity(synset2)     # Wu-Palmer Similarity >1h20min
+            # synset1.res_similarity(synset2, ic) # Resnik Similarity (brown_ic or genesis_ic) 130 sec
+            # synset1.jcn_similarity(synset2, ic) # Jiang-Conrath Similarity (brown_ic or genesis_ic) 150 sec
+            # synset1.lin_similarity(synset2, ic) # Lin Similarity (semcor_ic) 130 sec
+            if i2==i1 : 
+                pass
+            else :
+                if need_ic : 
+                    sim = sim_func(synset2, ic)
+                else : 
+                    sim = sim_func(synset2)
+                    
+                
+                nn_weight[i2] = sim
+        nn_weight[i1] = 0       # set self-similarity to zero
+        ind_sort = np.argsort(nn_weight)
+        knn_ind = ind_sort[-k:] # take neighbours with biggest similarity 
+        nn_weight.sort()
+        knn_weight = nn_weight[-k:]
+            
+        for m in range(k):
+            
+            nx_G.add_edge(i1, knn_ind[m], weight=knn_weight[m])
+    
+    #    wn_visited.append(synset1)
+    
+    # Print total time
+    print("Total Time :", time()-t_begin)
+    
+    # Save similarity graph
+    print("Save Similarity Graph ...")
+    t_begin = time()
+    #nx_G = nx.from_scipy_sparse_matrix(A)
+    nx.write_weighted_edgelist(nx_G,'graph/wordnet_' + method + '.graph')
+    print("Total Time :", time()-t_begin)
+
