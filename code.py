@@ -321,6 +321,8 @@ for method in sim_measures :
     print("Save Similarity Graph ...")
     t_begin = time()
     #nx_G = nx.from_scipy_sparse_matrix(A)
-    nx.write_weighted_edgelist(nx_G,'graph/wordnet_' + method + '.graph')
+    graph_file = open('graph/wordnet_' + method + '.graph', "wb")
+    nx.write_weighted_edgelist(nx_G,graph_file)
+    graph_file.close()
     print("Total Time :", time()-t_begin)
 
