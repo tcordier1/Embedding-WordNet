@@ -151,7 +151,10 @@ for method in sim_measures :
 
         for i2, synset2 in enumerate(wn_sel):
 
-            sim = sim_func(synset2)
+            try :
+                sim = sim_func(synset2)
+            except :
+                sim = 0
             if sim > 0 :
                 if nb_nn < k :
                     nn_ind.append(i2)
@@ -173,11 +176,6 @@ for method in sim_measures :
                         min_idx = nn_weight.index(min_weight)
                         min_ind = nn_ind[min_idx]
 
-        #ind_sort = np.argsort(nn_weight)
-        #knn_ind = ind_sort[-k:] # take neighbours with biggest similarity
-        #nn_weight.sort()
-        #knn_weight = nn_weight[-k:]
-
         knn_ind = nn_ind
         knn_weight = nn_weight
 
@@ -190,10 +188,3 @@ for method in sim_measures :
     t_begin = time()
     nx.write_weighted_edgelist(nx_G,'graph/wordnet_' + method + '.graph')
     print("Total Time :", time()-t_begin)
-
-
-'''
-###################################################################################################
-Step 2 and 3 bis: Direct implementation
-###################################################################################################
-'''
