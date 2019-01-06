@@ -70,12 +70,13 @@ def main(args):
     '''
     Pipeline for representational learning for all nodes in a graph.
     '''
-    print("Read Graph ...")
+    print("Create Graph ...")
     nx_G = read_graph()
     # Precompute probabilities and generate walks
-    print("Create Graph ...")
+    print("Create Node2Vec ...")
     node2vec = Node2Vec(nx_G, dimensions=args.dimensions, walk_length=args.walk_length, num_walks=args.num_walks, workers=args.workers, p=args.p, q=args.q)
     # Embed nodes
+    print("Node2Vec fitting ...")
     model = node2vec.fit(window=args.window_size, min_count=1, batch_words=4)
     # Save embeddings for later use
     print("Learn Embeddings ...")
