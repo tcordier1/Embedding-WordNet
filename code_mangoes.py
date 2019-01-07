@@ -26,6 +26,10 @@ import string
 # WordNet: Import the NLTK corpus reader.
 nltk.download('wordnet')
 from nltk.corpus import wordnet as wn
+nltk.download('brown')
+from nltk.corpus import brown
+
+from nltk.wsd import lesk
 
 def parse_args():
     '''
@@ -71,18 +75,42 @@ def load_embedding_synset(path, dim_wn) :
 
     return synset_emb
 
+def word_sense_disambiguation(syn2idx) :
+    syn2count = dict.fromkeys(syn2idx.keys(), dict())
+    for sent in tqdm(brown.sents(), desc="Load Word Sense Disambiguation", total=len(brown.sents())) :
+        for word in sent :
+            try :
+                synset = lesk(sent, word, 'n').name()
+            except :
+                synset = None
+            if synset is not None :
+                try :
+                    syn2count[synset][word] += 1
+                except :
+                    syn2count[synset][word] = 1
+    return syn2count
+
 def load_embedding_noun(synset_emb, idx2noun, syn2idx) :
-    #%% Word embedding, beware of the index for synsets (no node 0)
+    # Word embedding, beware of the index for synsets (no node 0)
     n_synsets, dim = synset_emb.shape
     n_words = len(idx2noun)
     word_emb = np.zeros((n_words,dim))
+
+    syn2count = word_sense_disambiguation(syn2idx)
 
     word2idx = {}
     for i, word in tqdm(enumerate(idx2noun), desc="Load Word Embedding", total=len(idx2noun)):
         word2idx[word] = i
         synsets = wn.synsets(word,pos=wn.NOUN)
         synset_indices = [syn2idx[synset.name()] for synset in synsets]
-        word_emb[i,:] = synset_emb[synset_indices,:].mean(axis=0)
+        synset_weigths = []
+        for synset in synsets :
+            try :
+                w = syn2count[synset.name()][word]
+            except :
+                w = 1
+            synset_weigths.append(w)
+        word_emb[i,:] = np.average(synset_emb[synset_indices,:], axis=0, weights=synset_weigths)
 
     return word2idx, word_emb
 
@@ -94,7 +122,6 @@ synset_emb = np.fromfile(filepath, np.float32).reshape(num_vertices, dim)
 '''
 
 def test(emb) :
-
     '''
     L1 = []
     for i, synset1 in enumerate(wn_all) :
@@ -128,7 +155,6 @@ def test(emb) :
     print(emb.get_closest_words("man", 10))
 
 def main(args):
-
     idx2noun, syn2idx = load_wordnet()
     synset_emb = load_embedding_synset(args.input, len(syn2idx))
     source, matrix = load_embedding_noun(synset_emb, idx2noun, syn2idx)
