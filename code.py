@@ -74,6 +74,7 @@ from scipy.sparse import dok_matrix
 
 import os
 
+
 '''
 ## Extraction of WordNet noun synsets
 '''
@@ -81,7 +82,7 @@ import os
 # Definition of all WordNet noun synsets
 wn_all = list(wn.all_synsets('n'))
 N_all = len(wn_all)
-
+#%%
 # Sample of all WordNet noun synsets
 N_sel = N_all #1000
 wn_sel = wn_all #choice(wn_all,N_sel,False)
@@ -95,6 +96,11 @@ except:
 '''
 ## Construction of similarity graphs
 '''
+
+try :
+ os.mkdir('graph')    
+except:
+    pass
 
 node_file = open("graph/wordnet.nodes", "w")
 for i, node in enumerate(wn_sel) :
@@ -119,6 +125,7 @@ for method in sim_measures :
         nx_G.add_node(i, synset=synset)
 
     print("Add Edges ...")
+
 
     for i1, synset1 in tqdm(enumerate(wn_sel), desc="Iteration over WordNet", total=N_sel):
 
