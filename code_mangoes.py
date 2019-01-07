@@ -30,6 +30,8 @@ nltk.download('brown')
 from nltk.corpus import brown
 
 from nltk.wsd import lesk
+from pywsd.lesk import cosine_lesk
+from pywsd.similarity import max_similarity as maxsim
 
 def parse_args():
     '''
